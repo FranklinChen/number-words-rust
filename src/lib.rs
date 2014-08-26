@@ -1,33 +1,38 @@
 // TODO Look into using mutation with DList for O(1) append.
 // But then what about parallelism?
-// TODO Use Chars iterator?
 // TODO Use TrieSet for lookup in general
 
+/// Entry point.
+/// Internally, use sequences rather than strings.
+/// Note the use of move_iter.
 pub fn parse(digits: &str) -> Vec<String> {
+    // It is convenient to use char slices.
     let v: Vec<char> = digits.chars().collect();
     parse_list(v.as_slice())
-}
-
-fn two_chars_to_string(d0: char, d1: char) -> String {
-    let mut d0_d1 = String::with_capacity(2);
-    d0_d1.push_char(d0);
-    d0_d1.push_char(d1);
-    d0_d1
+        .move_iter()
+        .map(|reversed_chars| {
+            let chars: Vec<char> = reversed_chars
+                .move_iter()
+                .rev()
+                .collect();
+            String::from_chars(chars.as_slice())
+        })
+        .collect()
 }
 
 /// Note the append
-fn parse_list(ds: &[char]) -> Vec<String> {
+fn parse_list(ds: &[char]) -> Vec<Vec<char>> {
     match ds {
-        [] => vec!["".to_string()],
+        [] => vec![vec![]],
         [d0, ..ds0] => {
             let first = try_parse(
-                try_lookup(String::from_char(1, d0).as_slice()),
+                try_lookup(String::from_chars([d0]).as_slice()),
                 ds0);
             match ds0 {
                 [] => first,
                 [d1, ..ds1] => {
                     let second = try_parse(
-                        try_lookup(two_chars_to_string(d0, d1).as_slice()),
+                        try_lookup(String::from_chars([d0, d1]).as_slice()),
                         ds1);
                     second.append(first.as_slice())
                 }
@@ -36,14 +41,15 @@ fn parse_list(ds: &[char]) -> Vec<String> {
     }
 }
 
-/// TODO: fix horribly inefficient append to a single char
-fn try_parse(c_opt: Option<char>, ds: &[char]) -> Vec<String> {
+/// Append first char to the end of each Vec<char> for efficiency.
+/// At the very end of parse, we will reverse each Vec<char> to a String.
+fn try_parse(c_opt: Option<char>, ds: &[char]) -> Vec<Vec<char>> {
     match c_opt {
         None => vec![],
         Some(c) => {
-            let remainder = parse_list(ds);
-            remainder.iter()
-                .map(|s| String::from_char(1, c).append(s.as_slice()))
+            parse_list(ds)
+                .move_iter()
+                .map(|s| s.append_one(c))
                 .collect()
         }
     }
@@ -89,7 +95,8 @@ mod test {
     #[test]
     fn it_works() {
         let expected = vec!["ABCD", "AWD", "LCD"];
-        let expected_set: HashSet<String> = expected.move_iter()
+        let expected_set: HashSet<String> = expected
+            .move_iter()
             .map(|s| s.to_string())
             .collect();
 
