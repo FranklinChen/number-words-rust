@@ -1,6 +1,3 @@
-// TODO Look into using mutation with DList for O(1) append.
-// But then what about parallelism?
-
 use std::iter::range_inclusive;
 use std::char;
 use std::collections::HashMap;
@@ -12,6 +9,10 @@ fn default_config() -> Config {
         .map(|b| ((b - b'A' + 1).to_string(),
                   char::from_u32(b as u32).unwrap()))
         .collect()
+}
+
+fn split_at<T>(i: uint, xs: &[T]) -> (&[T], &[T]) {
+    (xs.slice_to(i), xs.slice_from(i))
 }
 
 pub struct Parser {
@@ -56,30 +57,32 @@ impl Parser {
     fn parse_list(&self, ds: &[char]) -> Vec<Vec<char>> {
         match ds {
             [] => vec![vec![]],
-            [d0, ..ds0] => {
-                let first = self.try_parse(
-                    self.try_lookup(&String::from_chars([d0])),
-                    ds0);
-                match ds0 {
-                    [] => first,
-                    [d1, ..ds1] => {
-                        let second = self.try_parse(
-                            self.try_lookup(&String::from_chars([d0, d1])),
-                            ds1);
-                        second.append(first.as_slice())
-                    }
-                }
+            _ => {
+                // Split into possible prefix/suffix halves.
+                let (prefix, suffix) = split_at(self.max_chunk, ds);
+
+                range_inclusive(1u, prefix.len())
+                    .map(|i| split_at(i, prefix))
+                    .flat_map(|(digits, unparsed)|
+                              self.try_parse(digits, unparsed, suffix)
+                              .move_iter())
+                    .collect()
             }
         }
     }
     
     /// Append first char to the end of each Vec<char> for efficiency.
     /// At the very end of parse, we will reverse each Vec<char> to a String.
-    fn try_parse(&self, c_opt: Option<char>, ds: &[char]) -> Vec<Vec<char>> {
-        match c_opt {
+    fn try_parse(&self,
+                 digits: &[char],
+                 unparsed: &[char],
+                 suffix: &[char]) -> Vec<Vec<char>> {
+        match self.try_lookup(&String::from_chars(digits)) {
             None => vec![],
             Some(c) => {
-                self.parse_list(ds)
+                self.parse_list(Vec::from_slice(digits)
+                                         .append(suffix)
+                                         .as_slice())
                     .move_iter()
                     .map(|s| s.append_one(c))
                     .collect()
