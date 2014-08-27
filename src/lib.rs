@@ -82,9 +82,9 @@ impl Parser {
                  digits: &[char],
                  unparsed: &[char],
                  suffix: &[char]) -> Vec<Vec<char>> {
-        match self.try_lookup(&String::from_chars(digits)) {
+        match self.table.find(&String::from_chars(digits)) {
             None => vec![],
-            Some(c) => {
+            Some(&c) => {
                 let rest = Vec::from_slice(unparsed).append(suffix);
                 self.parse_list(rest.as_slice())
                     .move_iter()
@@ -92,10 +92,6 @@ impl Parser {
                     .collect()
             }
         }
-    }
-    
-    fn try_lookup(&self, s: &String) -> Option<char> {
-        self.table.find(s).map(|c| *c)
     }
 }
 
