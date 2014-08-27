@@ -7,21 +7,21 @@ pub type Config = Vec<(String, char)>;
 
 pub fn default_config() -> Config {
     range_inclusive(b'A', b'Z')
-        .map(|b| ((b - b'A' + 1).to_string(),
-                  char::from_u32(b as u32).unwrap()))
+        .map(|b|
+             ((b - b'A' + 1).to_string(),
+              char::from_u32(b as u32).unwrap()))
         .collect()
 }
 
 /// Utility function.
 /// Unlike standard library split_at, always stays within bounds.
 fn split_at_within<T>(i: uint, xs: &[T]) -> (&[T], &[T]) {
-    (xs.slice_to(min(i, xs.len())),
-     xs.slice_from(min(i, xs.len())))
+    xs.split_at(min(i, xs.len()))
 }
 
 pub struct Parser {
     max_chunk: uint,
-    table: HashMap<String, char>
+    table: HashMap<Vec<char>, char>
 }
 
 impl Parser {
@@ -29,12 +29,14 @@ impl Parser {
         Parser {
             max_chunk: config
                 .iter()
-                .map(|&(ref s, _)| s.len())
+                .map(|&(ref s, _)|
+                     s.len())
                 .max_by(|&n| n)
                 .unwrap_or(0),
             table: config
                 .iter()
-                .map(|&(ref s, c)| (s.clone(), c))
+                .map(|&(ref s, c)|
+                     (s.as_slice().chars().collect(), c))
                 .collect()
         }
     }
@@ -82,7 +84,7 @@ impl Parser {
                  digits: &[char],
                  unparsed: &[char],
                  suffix: &[char]) -> Vec<Vec<char>> {
-        match self.table.find(&String::from_chars(digits)) {
+        match self.table.find(&Vec::from_slice(digits)) {
             None => vec![],
             Some(&c) => {
                 let rest = Vec::from_slice(unparsed).append(suffix);
