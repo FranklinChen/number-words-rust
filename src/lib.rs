@@ -1,15 +1,18 @@
 use std::iter::range_inclusive;
-use std::char;
 use std::cmp::min;
 use std::collections::HashMap;
 
 pub type Config = Vec<(String, char)>;
 
+type WordInProgress = Vec<char>;
+
+type WordsInProgress = Vec<WordInProgress>;
+
 pub fn default_config() -> Config {
     range_inclusive(b'A', b'Z')
         .map(|b|
              ((b - b'A' + 1).to_string(),
-              char::from_u32(b as u32).unwrap()))
+              b as char))
         .collect()
 }
 
@@ -47,10 +50,11 @@ impl Parser {
     pub fn parse(&self, digits: &str) -> Vec<String> {
         // It is convenient to use char slices.
         let v: Vec<char> = digits.chars().collect();
-        self.parse_list(v.as_slice())
+        let parsed = self.parse_list(v.as_slice());
+        parsed
             .move_iter()
             .map(|reversed_chars| {
-                let chars: Vec<char> = reversed_chars
+                let chars: WordInProgress = reversed_chars
                     .move_iter()
                     .rev()
                     .collect();
@@ -59,8 +63,8 @@ impl Parser {
             .collect()
     }
 
-    /// Note the append
-    fn parse_list(&self, ds: &[char]) -> Vec<Vec<char>> {
+    /// Note the use of flat_map and move_iter to avoid needless append.
+    fn parse_list(&self, ds: &[char]) -> WordsInProgress {
         match ds {
             [] => vec![vec![]],
             _ => {
@@ -78,17 +82,19 @@ impl Parser {
         }
     }
     
-    /// Append first char to the end of each Vec<char> for efficiency.
-    /// At the very end of parse, we will reverse each Vec<char> to a String.
+    /// Append first char to the end of each WordInProgress for efficiency.
+    /// At the very end of parse, we will reverse each to a String.
     fn try_parse(&self,
                  digits: &[char],
                  unparsed: &[char],
-                 suffix: &[char]) -> Vec<Vec<char>> {
+                 suffix: &[char]) -> WordsInProgress {
+        // TODO waiting for master for map_or_else
         match self.table.find(&Vec::from_slice(digits)) {
             None => vec![],
             Some(&c) => {
                 let rest = Vec::from_slice(unparsed).append(suffix);
-                self.parse_list(rest.as_slice())
+                let rest_parsed = self.parse_list(rest.as_slice());
+                rest_parsed
                     .move_iter()
                     .map(|s| s.append_one(c))
                     .collect()
