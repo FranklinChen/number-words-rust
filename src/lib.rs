@@ -1,12 +1,14 @@
 use std::iter::range_inclusive;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::collections::DList;
 
 pub type Config = Vec<(String, char)>;
 
-type WordInProgress = Vec<char>;
-
-type WordsInProgress = Vec<WordInProgress>;
+// Instead of Vec<char>, in order to use O(1) push_front.
+// DList is good for mutation.
+// Vec<char> was reasonable but required building in reverse.
+type WordInProgress = DList<char>;
 
 pub fn default_config() -> Config {
     range_inclusive(b'A', b'Z')
@@ -16,36 +18,30 @@ pub fn default_config() -> Config {
         .collect()
 }
 
-/// Utility function.
-/// Unlike standard library split_at, always stays within bounds.
-fn split_at_within<T>(i: uint, xs: &[T]) -> (&[T], &[T]) {
-    xs.split_at(min(i, xs.len()))
-}
-
 pub struct Parser {
-    max_chunk: uint,
+    max_lookahead: uint,
     table: HashMap<Vec<char>, char>
 }
 
 impl Parser {
     pub fn new(config: &Config) -> Parser {
         Parser {
-            max_chunk: config
+            max_lookahead: config
                 .iter()
                 .map(|&(ref s, _)|
-                     s.len())
+                     s.len())   // get string lengths
                 .max_by(|&n| n)
                 .unwrap_or(0),
             table: config
                 .iter()
-                .map(|&(ref s, c)|
+                .map(|&(ref s, c)| // String -> Vec<char>
                      (s.as_slice().chars().collect(), c))
                 .collect()
         }
     }
 
     /// Entry point.
-    /// Internally, use sequences rather than strings.
+    /// Internally, get out of string early, to use chars instead.
     /// Note the use of move_iter.
     pub fn parse(&self, digits: &str) -> Vec<String> {
         // It is convenient to use char slices.
@@ -53,50 +49,55 @@ impl Parser {
         let parsed = self.parse_list(v.as_slice());
         parsed
             .move_iter()
-            .map(|reversed_chars| {
-                let chars: WordInProgress = reversed_chars
+            .map(|char_list| {
+                let chars: Vec<char> = char_list
                     .move_iter()
-                    .rev()
                     .collect();
                 String::from_chars(chars.as_slice())
             })
             .collect()
     }
 
-    /// Note the use of flat_map and move_iter to avoid needless append.
-    fn parse_list(&self, ds: &[char]) -> WordsInProgress {
+    /// Recursive.
+    /// Note the use of flat_map and move_iter to avoid redundant
+    /// allocation and copying of vectors.
+    fn parse_list(&self, ds: &[char]) -> Vec<WordInProgress> {
         match ds {
-            [] => vec![vec![]],
+            [] => vec![DList::new()],
             _ => {
-                // Split into possible prefix/suffix halves.
-                let (prefix, suffix) = split_at_within(self.max_chunk, ds);
+                // Try all parses up to the maximum lookahead.
+                let max_lookahead_index = min(self.max_lookahead, ds.len());
+                let prefix = ds.slice_to(max_lookahead_index);
 
-                range_inclusive(1u, prefix.len())
-                    .flat_map(|i| {
-                        let (digits, unparsed) = split_at_within(i, prefix);
-                        self.try_parse(digits, unparsed, suffix)
+                range_inclusive(1u, max_lookahead_index)
+                    .flat_map(|lookahead_index| {
+                        // Split into possible parsed/unparsed configurations.
+                        let unparsed_index = min(lookahead_index,
+                                                 max_lookahead_index);
+
+                        // Actual token to look up.
+                        let token_slice = prefix.slice_to(unparsed_index);
+                        let token = Vec::from_slice(token_slice);
+
+                        self.table.find(&token).map_or_else(
+                            || vec![],
+                            |&c| {
+                                let unparsed = ds.slice_from(unparsed_index);
+
+                                // Mutate recursive result in place,
+                                // instead of mapping.
+                                let mut rest_parsed = self.parse_list(unparsed);
+                                for s in rest_parsed.mut_iter() {
+                                    //TODO waiting for this to appear
+                                    //s.push_front(c)
+                                    let mut new_front = DList::new();
+                                    new_front.push(c);
+                                    s.prepend(new_front);
+                                }
+                                rest_parsed
+                            })
                             .move_iter()
                     })
-                    .collect()
-            }
-        }
-    }
-    
-    /// Append first char to the end of each WordInProgress for efficiency.
-    /// At the very end of parse, we will reverse each to a String.
-    fn try_parse(&self,
-                 digits: &[char],
-                 unparsed: &[char],
-                 suffix: &[char]) -> WordsInProgress {
-        // TODO waiting for master for map_or_else
-        match self.table.find(&Vec::from_slice(digits)) {
-            None => vec![],
-            Some(&c) => {
-                let rest = Vec::from_slice(unparsed).append(suffix);
-                let rest_parsed = self.parse_list(rest.as_slice());
-                rest_parsed
-                    .move_iter()
-                    .map(|s| s.append_one(c))
                     .collect()
             }
         }
