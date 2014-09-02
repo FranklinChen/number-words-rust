@@ -1,14 +1,12 @@
 use std::iter::range_inclusive;
 use std::cmp::min;
 use std::collections::HashMap;
-use std::collections::DList;
 
 pub type Config = Vec<(String, char)>;
 
-// Instead of Vec<char>, in order to use O(1) push_front.
-// DList is good for mutation.
-// Vec<char> was reasonable but required building in reverse.
-type WordInProgress = DList<char>;
+/// Reversed word in progress. Reversed because appending a char
+/// to end is O(1).
+type WordInProgress = Vec<char>;
 
 pub fn default_config() -> Config {
     range_inclusive(b'A', b'Z')
@@ -45,14 +43,15 @@ impl Parser {
     /// Note the use of move_iter.
     pub fn parse(&self, digits: &str) -> Vec<String> {
         // It is convenient to use char slices.
-        let v: Vec<char> = digits.chars().collect();
+        let v = digits.chars().collect::<Vec<char>>();
         let parsed = self.parse_list(v.as_slice());
         parsed
             .move_iter()
             .map(|char_list| {
-                let chars: Vec<char> = char_list
+                let chars = char_list
                     .move_iter()
-                    .collect();
+                    .rev()
+                    .collect::<Vec<char>>();
                 String::from_chars(chars.as_slice())
             })
             .collect()
@@ -63,7 +62,7 @@ impl Parser {
     /// allocation and copying of vectors.
     fn parse_list(&self, ds: &[char]) -> Vec<WordInProgress> {
         match ds {
-            [] => vec![DList::new()],
+            [] => vec![vec![]],
             _ => {
                 // Try all parses up to the maximum lookahead.
                 let max_lookahead_index = min(self.max_lookahead, ds.len());
@@ -84,19 +83,15 @@ impl Parser {
                             |&c| {
                                 let unparsed = ds.slice_from(unparsed_index);
 
-                                // Mutate recursive result in place,
-                                // instead of mapping.
-                                let mut rest_parsed = self.parse_list(unparsed);
-                                for s in rest_parsed.mut_iter() {
-                                    //TODO waiting for this to appear
-                                    //s.push_front(c)
-                                    let mut new_front = DList::new();
-                                    new_front.push(c);
-                                    s.prepend(new_front);
-                                }
-                                rest_parsed
-                            })
-                            .move_iter()
+                                self.parse_list(unparsed)
+                                    .move_iter()
+                                    .map(|s| {
+                                         s.append_one(c)
+                                    })
+                                    .collect::<Vec<WordInProgress>>()
+                            }
+                        )
+                        .move_iter()
                     })
                     .collect()
             }
@@ -114,16 +109,17 @@ mod test {
     fn it_works() {
         let parser = Parser::new(&default_config());
 
-        let expected = vec!["ABCD", "AWD", "LCD"];
-        let expected_set: HashSet<String> = expected
-            .move_iter()
-            .map(|s| s.to_string())
-            .collect();
+        let expected = ["ABCD", "AWD", "LCD"];
+        let expected_set = expected
+            .iter()
+            .map(|&s| s)
+            .collect::<HashSet<&str>>();
 
         let actual = parser.parse("1234");
-        let actual_set: HashSet<String> = actual
-            .move_iter()
-            .collect();
+        let actual_set = actual
+            .iter()
+            .map(|s| s.as_slice())
+            .collect::<HashSet<&str>>();
         assert_eq!(actual_set, expected_set)
     }
 }
