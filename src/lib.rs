@@ -40,16 +40,16 @@ impl Parser {
 
     /// Entry point.
     /// Internally, get out of string early, to use chars instead.
-    /// Note the use of move_iter.
+    /// Note the use of into_iter.
     pub fn parse(&self, digits: &str) -> Vec<String> {
         // It is convenient to use char slices.
         let v = digits.chars().collect::<Vec<char>>();
         let parsed = self.parse_list(v.as_slice());
         parsed
-            .move_iter()
+            .into_iter()
             .map(|char_list| {
                 let chars = char_list
-                    .move_iter()
+                    .into_iter()
                     .rev()
                     .collect::<Vec<char>>();
                 String::from_chars(chars.as_slice())
@@ -58,7 +58,7 @@ impl Parser {
     }
 
     /// Recursive.
-    /// Note the use of flat_map and move_iter to avoid redundant
+    /// Note the use of flat_map and into_iter to avoid redundant
     /// allocation and copying of vectors.
     fn parse_list(&self, ds: &[char]) -> Vec<WordInProgress> {
         match ds {
@@ -76,7 +76,7 @@ impl Parser {
 
                         // Actual token to look up.
                         let token_slice = prefix.slice_to(unparsed_index);
-                        let token = Vec::from_slice(token_slice);
+                        let token = token_slice.to_vec();
 
                         self.table.find(&token).map_or_else(
                             || vec![],
@@ -84,14 +84,17 @@ impl Parser {
                                 let unparsed = ds.slice_from(unparsed_index);
 
                                 self.parse_list(unparsed)
-                                    .move_iter()
-                                    .map(|s| {
-                                         s.append_one(c)
+                                    .into_iter()
+                                    .map(|mut s| {
+                                        // mutate for efficiency
+                                        // pushing to end is efficient
+                                        s.push(c);
+                                        s
                                     })
                                     .collect::<Vec<WordInProgress>>()
                             }
                         )
-                        .move_iter()
+                        .into_iter()
                     })
                     .collect()
             }
