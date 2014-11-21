@@ -80,7 +80,7 @@ impl Parser {
                         let token_slice = prefix.slice_to(unparsed_index);
                         let token = token_slice.to_vec();
 
-                        self.table.find(&token).map_or_else(
+                        self.table.get(&token).map_or_else(
                             || vec![],
                             |&c| {
                                 let unparsed = ds.slice_from(unparsed_index);
@@ -108,7 +108,7 @@ impl Parser {
 mod test {
     use super::default_config;
     use super::Parser;
-    use std::collections::hashmap::HashSet;
+    use std::collections::HashSet;
 
     #[test]
     fn it_works() {
