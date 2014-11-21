@@ -1,3 +1,5 @@
+//! Solve a [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
+
 use std::iter::range_inclusive;
 use std::cmp::min;
 use std::collections::HashMap;

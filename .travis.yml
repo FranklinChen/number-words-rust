@@ -1,1 +1,6 @@
 language: rust
+notifications:
+  email:
+    recipients:
+      - franklinchen@franklinchen.com
+    on_success: never
