@@ -1,10 +1,10 @@
 [package]
 
-name = "number-words"
+name = "number_words"
 version = "0.0.1"
 authors = ["Franklin Chen <franklinchen@franklinchen.com>"]
 description = "Code for FizzBuzz talk"
-documentation = "http://rust-ci.org/FranklinChen/number-words-rust/doc/number-words"
+documentation = "http://rust-ci.org/FranklinChen/number-words-rust/doc/number_words"
 homepage = "https://github.com/FranklinChen/number-words-rust"
 repository = "https://github.com/FranklinChen/number-words-rust"
 readme = "README.md"
