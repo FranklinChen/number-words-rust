@@ -50,11 +50,10 @@ impl Parser {
         parsed
             .into_iter()
             .map(|char_list| {
-                let chars = char_list
+                char_list
                     .into_iter()
                     .rev()
-                    .collect::<Vec<char>>();
-                String::from_chars(chars.as_slice())
+                    .collect()
             })
             .collect()
     }
