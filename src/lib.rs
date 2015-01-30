@@ -1,5 +1,8 @@
 //! Solve a [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
 
+#![feature(core)]
+#![feature(collections)]
+
 use std::iter::range_inclusive;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -19,7 +22,7 @@ pub fn default_config() -> Config {
 }
 
 pub struct Parser {
-    max_lookahead: uint,
+    max_lookahead: usize,
     table: HashMap<Vec<char>, char>
 }
 
@@ -35,7 +38,7 @@ impl Parser {
             table: config
                 .iter()
                 .map(|&(ref s, c)| // String -> Vec<char>
-                     (s.as_slice().chars().collect(), c))
+                     (s.chars().collect(), c))
                 .collect()
         }
     }
@@ -46,7 +49,7 @@ impl Parser {
     pub fn parse(&self, digits: &str) -> Vec<String> {
         // It is convenient to use char slices.
         let v = digits.chars().collect::<Vec<char>>();
-        let parsed = self.parse_list(v.as_slice());
+        let parsed = self.parse_list(&v[]);
         parsed
             .into_iter()
             .map(|char_list| {
@@ -67,22 +70,22 @@ impl Parser {
             _ => {
                 // Try all parses up to the maximum lookahead.
                 let max_lookahead_index = min(self.max_lookahead, ds.len());
-                let prefix = ds.slice_to(max_lookahead_index);
+                let prefix = &ds[..max_lookahead_index];
 
-                range_inclusive(1u, max_lookahead_index)
+                range_inclusive(1, max_lookahead_index)
                     .flat_map(|lookahead_index| {
                         // Split into possible parsed/unparsed configurations.
                         let unparsed_index = min(lookahead_index,
                                                  max_lookahead_index);
 
                         // Actual token to look up.
-                        let token_slice = prefix.slice_to(unparsed_index);
+                        let token_slice = &prefix[..unparsed_index];
                         let token = token_slice.to_vec();
 
                         self.table.get(&token).map_or_else(
                             || vec![],
                             |&c| {
-                                let unparsed = ds.slice_from(unparsed_index);
+                                let unparsed = &ds[unparsed_index..];
 
                                 self.parse_list(unparsed)
                                     .into_iter()
@@ -116,14 +119,13 @@ mod test {
         let expected = ["ABCD", "AWD", "LCD"];
         let expected_set = expected
             .iter()
-            .map(|&s| s)
-            .collect::<HashSet<&str>>();
+            .map(|s| s.to_string())
+            .collect::<HashSet<String>>();
 
         let actual = parser.parse("1234");
         let actual_set = actual
-            .iter()
-            .map(|s| s.as_slice())
-            .collect::<HashSet<&str>>();
+            .into_iter()
+            .collect::<HashSet<String>>();
         assert_eq!(actual_set, expected_set)
     }
 }
