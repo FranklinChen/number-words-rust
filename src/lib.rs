@@ -1,6 +1,7 @@
 //! Solve a [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
 
-use std::iter::range_inclusive;
+#![feature(core)]
+
 use std::cmp::min;
 use std::collections::HashMap;
 
@@ -11,7 +12,7 @@ pub type Config = Vec<(String, char)>;
 type WordInProgress = Vec<char>;
 
 pub fn default_config() -> Config {
-    range_inclusive(b'A', b'Z')
+    (b'A' .. b'Z'+1)
         .map(|b|
              ((b - b'A' + 1).to_string(),
               b as char))
@@ -46,7 +47,7 @@ impl Parser {
     pub fn parse(&self, digits: &str) -> Vec<String> {
         // It is convenient to use char slices.
         let v = digits.chars().collect::<Vec<char>>();
-        let parsed = self.parse_list(&v[]);
+        let parsed = self.parse_list(&v[..]);
         parsed
             .into_iter()
             .map(|char_list| {
@@ -69,7 +70,7 @@ impl Parser {
                 let max_lookahead_index = min(self.max_lookahead, ds.len());
                 let prefix = &ds[..max_lookahead_index];
 
-                range_inclusive(1, max_lookahead_index)
+                (1 .. max_lookahead_index+1)
                     .flat_map(|lookahead_index| {
                         // Split into possible parsed/unparsed configurations.
                         let unparsed_index = min(lookahead_index,
