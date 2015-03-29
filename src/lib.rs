@@ -1,6 +1,7 @@
 //! Solve a [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
 
 #![feature(core)]
+#![feature(slice_patterns)]
 
 use std::cmp::min;
 use std::collections::HashMap;
