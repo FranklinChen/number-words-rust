@@ -1,9 +1,6 @@
 //! Solve a [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
 
-#![feature(core)]
-#![feature(slice_patterns)]
-
-use std::cmp::min;
+use std::cmp;
 use std::collections::HashMap;
 
 pub type Config = Vec<(String, char)>;
@@ -32,8 +29,7 @@ impl Parser {
                 .iter()
                 .map(|&(ref s, _)|
                      s.len())   // get string lengths
-                .max_by(|&n| n)
-                .unwrap_or(0),
+                .fold(0, cmp::max),
             table: config
                 .iter()
                 .map(|&(ref s, c)| // String -> Vec<char>
@@ -64,43 +60,41 @@ impl Parser {
     /// Note the use of flat_map and into_iter to avoid redundant
     /// allocation and copying of vectors.
     fn parse_list(&self, ds: &[char]) -> Vec<WordInProgress> {
-        match ds {
-            [] => vec![vec![]],
-            _ => {
-                // Try all parses up to the maximum lookahead.
-                let max_lookahead_index = min(self.max_lookahead, ds.len());
-                let prefix = &ds[..max_lookahead_index];
+        if ds.is_empty() {
+            vec![vec![]]
+        } else {
+            // Try all parses up to the maximum lookahead.
+            let max_lookahead_index = cmp::min(self.max_lookahead, ds.len());
+            let prefix = &ds[..max_lookahead_index];
 
-                (1 .. max_lookahead_index+1)
-                    .flat_map(|lookahead_index| {
-                        // Split into possible parsed/unparsed configurations.
-                        let unparsed_index = min(lookahead_index,
-                                                 max_lookahead_index);
+            (1 .. max_lookahead_index+1)
+                .flat_map(|lookahead_index| {
+                    // Split into possible parsed/unparsed configurations.
+                    let unparsed_index = cmp::min(lookahead_index,
+                                                  max_lookahead_index);
 
-                        // Actual token to look up.
-                        let token_slice = &prefix[..unparsed_index];
-                        let token = token_slice.to_vec();
+                    // Actual token to look up.
+                    let token_slice = &prefix[..unparsed_index];
+                    let token = token_slice.to_vec();
 
-                        self.table.get(&token).map_or_else(
-                            || vec![],
-                            |&c| {
-                                let unparsed = &ds[unparsed_index..];
+                    self.table.get(&token).map_or_else(
+                        || vec![],
+                        |&c| {
+                            let unparsed = &ds[unparsed_index..];
 
-                                self.parse_list(unparsed)
-                                    .into_iter()
-                                    .map(|mut s| {
-                                        // mutate for efficiency
-                                        // pushing to end is efficient
-                                        s.push(c);
-                                        s
-                                    })
-                                    .collect::<Vec<WordInProgress>>()
-                            }
-                        )
+                            self.parse_list(unparsed)
+                                .into_iter()
+                                .map(|mut s| {
+                                    // mutate for efficiency
+                                    // pushing to end is efficient
+                                    s.push(c);
+                                    s
+                                })
+                                .collect::<Vec<WordInProgress>>()
+                        })
                         .into_iter()
-                    })
-                    .collect()
-            }
+                })
+                .collect()
         }
     }
 }
