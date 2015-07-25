@@ -75,9 +75,8 @@ impl Parser {
 
                     // Actual token to look up.
                     let token_slice = &prefix[..unparsed_index];
-                    let token = token_slice.to_vec();
 
-                    self.table.get(&token).map_or_else(
+                    self.table.get(token_slice).map_or_else(
                         || vec![],
                         |&c| {
                             let unparsed = &ds[unparsed_index..];
