@@ -2,12 +2,12 @@
 
 use std::cmp;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 
 pub type Config = Vec<(String, char)>;
 
-/// Reversed word in progress. Reversed because appending a char
-/// to end is O(1).
-type WordInProgress = Vec<char>;
+/// Word in progress, constructed back to front.
+type WordInProgress = VecDeque<char>;
 
 pub fn default_config() -> Config {
     (b'A' .. b'Z'+1)
@@ -50,7 +50,6 @@ impl Parser {
             .map(|char_list| {
                 char_list
                     .into_iter()
-                    .rev()
                     .collect()
             })
             .collect()
@@ -61,7 +60,7 @@ impl Parser {
     /// allocation and copying of vectors.
     fn parse_list(&self, ds: &[char]) -> Vec<WordInProgress> {
         if ds.is_empty() {
-            vec![vec![]]
+            vec![VecDeque::new()]
         } else {
             // Try all parses up to the maximum lookahead.
             let max_lookahead_index = cmp::min(self.max_lookahead, ds.len());
@@ -85,8 +84,7 @@ impl Parser {
                                 .into_iter()
                                 .map(|mut s| {
                                     // mutate for efficiency
-                                    // pushing to end is efficient
-                                    s.push(c);
+                                    s.push_front(c);
                                     s
                                 })
                                 .collect::<Vec<WordInProgress>>()
