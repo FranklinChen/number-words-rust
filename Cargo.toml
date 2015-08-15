@@ -1,6 +1,6 @@
 [package]
 
-name = "number-words"
+name = "number_words"
 version = "0.0.3"
 authors = ["Franklin Chen <franklinchen@franklinchen.com>"]
 description = "Parse a number into possible words"
