@@ -109,13 +109,15 @@ mod test {
         let expected = ["ABCD", "AWD", "LCD"];
         let expected_set = expected
             .iter()
-            .map(|s| s.to_string())
-            .collect::<HashSet<String>>();
+            .cloned()
+            .collect::<HashSet<&str>>();
 
         let actual = parser.parse("1234");
         let actual_set = actual
-            .into_iter()
-            .collect::<HashSet<String>>();
+            .iter()
+            .map(|s| &s[..])
+            .collect::<HashSet<&str>>();
+
         assert_eq!(actual_set, expected_set)
     }
 }
