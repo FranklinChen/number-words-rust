@@ -9,4 +9,4 @@ homepage = "https://github.com/FranklinChen/number-words-rust"
 repository = "https://github.com/FranklinChen/number-words-rust"
 readme = "README.md"
 keywords = ["game", "parsing"]
-license = "MIT"
+license = "MIT OR Apache-2.0"
