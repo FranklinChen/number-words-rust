@@ -5,6 +5,8 @@
 [![](http://meritbadge.herokuapp.com/number_words)](https://crates.io/crates/number_words)
 Exploring different solutions to a [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
 
+Tested with Rust 1.26.0.
+
 ## License
 
 Licensed under either of

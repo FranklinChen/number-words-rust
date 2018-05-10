@@ -10,7 +10,7 @@ pub type Config = Vec<(String, char)>;
 type WordInProgress = VecDeque<char>;
 
 pub fn default_config() -> Config {
-    (b'A' .. b'Z'+1)
+    (b'A' ..= b'Z')
         .map(|b|
              ((b - b'A' + 1).to_string(),
               b as char))
@@ -66,7 +66,7 @@ impl Parser {
             let max_lookahead_index = cmp::min(self.max_lookahead, ds.len());
             let prefix = &ds[..max_lookahead_index];
 
-            (1 .. max_lookahead_index+1)
+            (1 ..= max_lookahead_index)
                 .flat_map(|lookahead_index| {
                     // Split into possible parsed/unparsed configurations.
                     let unparsed_index = cmp::min(lookahead_index,
