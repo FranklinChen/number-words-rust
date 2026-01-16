@@ -1,7 +1,8 @@
 # Number Words Rust
 
-[![](http://meritbadge.herokuapp.com/number_words)](https://crates.io/crates/number_words)
-[![CI](https://github.com/FranklinChen/number-words-rust/actions/workflows/ci.yml/badge.svg)](https://github.com/FranklinChen/number-words-rust/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/number_words.svg)](https://crates.io/crates/number_words)
+[![Docs](https://docs.rs/number_words/badge.svg)](https://docs.rs/number_words/)
+[![CI](https://github.com/FranklinChen/number-words-rust/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FranklinChen/number-words-rust/actions/workflows/ci.yml)
 
 A Rust crate that explores different algorithmic strategies to solve the [number word problem](http://programmingpraxis.com/2014/07/25/number-words/).
 
