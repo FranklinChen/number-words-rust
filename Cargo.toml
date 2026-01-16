@@ -1,7 +1,7 @@
 [package]
 
 name = "number_words"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Franklin Chen <franklinchen@franklinchen.com>"]
 description = "Parse a number into possible words"
 documentation = "http://rust-ci.org/FranklinChen/number-words-rust/doc/number_words/"
@@ -10,3 +10,14 @@ repository = "https://github.com/FranklinChen/number-words-rust"
 readme = "README.md"
 keywords = ["game", "parsing"]
 license = "MIT OR Apache-2.0"
+edition = "2024"
+
+[dev-dependencies]
+divan = "0.1.21"
+
+[[bench]]
+name = "benchmark"
+harness = false
+
+[dependencies]
+thiserror = "2.0.17"
